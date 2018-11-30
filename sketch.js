@@ -1,3 +1,5 @@
+// VARIAVEIS GLOBAIS ///////////////////////////////////////////////////////////
+
 // paleta de cores
 fundo = [44, 26, 29];
 fundoT = [166, 127, 142];
@@ -12,7 +14,13 @@ espessura = 7;
 // algumas variaveis
 coord = 75;
 textoVencedor = "";
+var contadorChamadas = 0;
 
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+// FUNCOES DO p5js /////////////////////////////////////////////////////////////
 
 // setup() principal do p5js
 function setup() {
@@ -38,6 +46,12 @@ function draw() {
 
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+// FUNCOES DO TABULEIRO ////////////////////////////////////////////////////////
+
 // mouseClicked() captura os cliques do mouse e dispara as funcoes de acordo
 function mouseClicked(){
 
@@ -52,11 +66,24 @@ function mouseClicked(){
     if(mouseX > resetX && mouseX < (resetX + 120)){
        if(mouseY > resetY && mouseY < (resetY + 46)){
            resetTabuleiro();
+           console.clear();
        }
     }
 
 }
 
+// reseta o tabuleiro e as demais variaveis para um estado inicial
+function resetTabuleiro(){
+    t.celulas = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+    textoVencedor = "";
+    contadorChamadas = 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+
+
+// TABULEIRO ///////////////////////////////////////////////////////////////////
 
 // objeto Tabuleiro
 function Tabuleiro(){
@@ -140,7 +167,7 @@ function Tabuleiro(){
         }
 
         // COMPUTADOR joga
-        var jogadasPossiveis = emptyIndexies(this.celulas);
+        var jogadasPossiveis = celulasVazias(this.celulas);
         var melhorJogada = minimax(this.celulas, "O");
         this.celulas[melhorJogada.index] = "O";
 
@@ -189,7 +216,7 @@ function Tabuleiro(){
                return 2;
        }
 
-       var vazios = emptyIndexies(this.celulas)
+       var vazios = celulasVazias(this.celulas)
        if(vazios.length === 0){
            textoVencedor = "Deu velha!";
        }
@@ -260,124 +287,126 @@ function Tabuleiro(){
         // texto com o numero de chamadas recursivas
         fill(corTexto);
         textSize(24);
-        text("chamadas recursivas: " + fc, 30, 50);
+        text("chamadas recursivas: " + contadorChamadas, 30, 50);
 
      }
+
 }
 
+////////////////////////////////////////////////////////////////////////////////
 
-// emptyIndexies(tabuleiro) retorna um array com todas as celulas vazias de um tabuleiro
-function emptyIndexies(tabuleiro){
-  return  tabuleiro.filter(s => s != "O" && s != "X");
-}
 
-// variavel que armazena quantas vezes a funcao foi recursivamente chamada
-var fc = 0;
 
-var huPlayer = "O";
-var aiPlayer = "X";
+// FUNCOES IA //////////////////////////////////////////////////////////////////
 
 // minimax(tabuleiro, jogador) eh a funcao do algoritmo de minimax
-function minimax(newBoard, player){
-  //add one to function calls
-  fc++;
+function minimax(novoTabuleiro, jogador){
 
-  //available spots
-  var availSpots = emptyIndexies(newBoard);
-  console.log(fc);
-  // checks for the terminal states such as win, lose, and tie and returning a value accordingly
-  if (winning(newBoard, huPlayer)){
-     return {score:-10};
-  }
-	else if (winning(newBoard, aiPlayer)){
-    return {score:10};
-	}
-  else if (availSpots.length === 0){
-  	return {score:0};
-  }
+    // incrementa o numero de chamadas
+    contadorChamadas++;
+    console.log(contadorChamadas + " chamadas");
 
-// an array to collect all the objects
-  var moves = [];
+    // armazena em um array as celulas vazias
+    var possiveisJogadas = celulasVazias(novoTabuleiro);
 
-  // loop through available spots
-  for (var i = 0; i < availSpots.length; i++){
-    //create an object for each and store the index of that spot that was stored as a number in the object's index key
-    var move = {};
-  	move.index = newBoard[availSpots[i]];
-
-    // set the empty spot to the current player
-    newBoard[availSpots[i]] = player;
-
-    //if collect the score resulted from calling minimax on the opponent of the current player
-    if (player == aiPlayer){
-      var result = minimax(newBoard, huPlayer);
-      move.score = result.score;
+    // verifica se tem um estado terminal em que o COMPUTADOR ganha, perde ou empata e retorna uma pontuacao
+    if (vence(novoTabuleiro, "O")){
+        return {pontuacao:-10};
     }
-    else{
-      var result = minimax(newBoard, aiPlayer);
-      move.score = result.score;
+    else if (vence(novoTabuleiro, "X")){
+        return {pontuacao:10};
+    }
+    else if (possiveisJogadas.length === 0){
+        return {pontuacao:0};
     }
 
-    //reset the spot to empty
-    newBoard[availSpots[i]] = move.index;
+    // array que vai guardar todas as jogadas e suas pontuacoes
+    var jogadas = [];
 
-    // push the object to the array
-    moves.push(move);
-  }
+    // loop que vai colocar todas as possiveis jogadas no array
+    for (var i = 0; i < possiveisJogadas.length; i++){
 
-// if it is the computer's turn loop over the moves and choose the move with the highest score
-  var bestMove;
-  if(player === aiPlayer){
-    var bestScore = -10000;
-    for(var i = 0; i < moves.length; i++){
-      if(moves[i].score > bestScore){
-        bestScore = moves[i].score;
-        bestMove = i;
-      }
+        // vai criar um objeto para cada um e armazenar o index da celula de cada jogada
+        var jogada = {};
+        jogada.index = novoTabuleiro[possiveisJogadas[i]];
+
+        // faz uma jogada numa celula vazia
+        novoTabuleiro[possiveisJogadas[i]] = jogador;
+
+        // armazena a pontuacao retornada do estado terminal daquela jogada
+        if (jogador == "X"){
+            var result = minimax(novoTabuleiro, "O");
+            jogada.pontuacao = result.pontuacao;
+        }
+        else{
+            var result = minimax(novoTabuleiro, "X");
+            jogada.pontuacao = result.pontuacao;
+        }
+
+        // desfaz a jogada
+        novoTabuleiro[possiveisJogadas[i]] = jogada.index;
+
+        // coloca a jogada no array de jogadas
+        jogadas.push(jogada);
     }
-  }else{
 
-// else loop over the moves and choose the move with the lowest score
-    var bestScore = 10000;
-    for(var i = 0; i < moves.length; i++){
-      if(moves[i].score < bestScore){
-        bestScore = moves[i].score;
-        bestMove = i;
-      }
+    // se for a vez do COMPUTADOR o loop resultara na jogada com a melhor pontuacao
+    var melhorJogada;
+    if(jogador === "X"){
+    var melhorPontuacao = -10000;
+        for(var i = 0; i < jogadas.length; i++){
+            if(jogadas[i].pontuacao > melhorPontuacao){
+                melhorPontuacao = jogadas[i].pontuacao;
+                melhorJogada = i;
+            }
+        }
+    }else{
+
+        // se for a vez do HUMANO o loop resultara na jogada com a pior pontuacao
+        var melhorPontuacao = 10000;
+        for(var i = 0; i < jogadas.length; i++){
+            if(jogadas[i].pontuacao < melhorPontuacao){
+                melhorPontuacao = jogadas[i].pontuacao;
+                melhorJogada = i;
+            }
+        }
     }
-  }
 
-// return the chosen move (object) from the array to the higher depth
-  return moves[bestMove];
-}
+    // retorna a jogada com a maior pontuacao
+    return jogadas[melhorJogada];
 
-function winning(novoTabuleiro, player){
+    }
 
-    // checa vitoria de X
+// checa se "X" ou "O" vence
+function vence(novoTabuleiro, jogador){
+
+    // checa vitoria de "X" ou "O"
     if(
            // checando horizontal
-           novoTabuleiro[0] == player && novoTabuleiro[1] == player && novoTabuleiro[2] == player ||
-           novoTabuleiro[3] == player && novoTabuleiro[4] == player && novoTabuleiro[5] == player ||
-           novoTabuleiro[6] == player && novoTabuleiro[7] == player && novoTabuleiro[8] == player ||
+           novoTabuleiro[0] == jogador && novoTabuleiro[1] == jogador && novoTabuleiro[2] == jogador ||
+           novoTabuleiro[3] == jogador && novoTabuleiro[4] == jogador && novoTabuleiro[5] == jogador ||
+           novoTabuleiro[6] == jogador && novoTabuleiro[7] == jogador && novoTabuleiro[8] == jogador ||
 
            // checando vertical
-           novoTabuleiro[0] == player && novoTabuleiro[3] == player && novoTabuleiro[6] == player ||
-           novoTabuleiro[1] == player && novoTabuleiro[4] == player && novoTabuleiro[7] == player ||
-           novoTabuleiro[2] == player && novoTabuleiro[5] == player && novoTabuleiro[8] == player ||
+           novoTabuleiro[0] == jogador && novoTabuleiro[3] == jogador && novoTabuleiro[6] == jogador ||
+           novoTabuleiro[1] == jogador && novoTabuleiro[4] == jogador && novoTabuleiro[7] == jogador ||
+           novoTabuleiro[2] == jogador && novoTabuleiro[5] == jogador && novoTabuleiro[8] == jogador ||
 
            // checando diagonal
-           novoTabuleiro[0] == player && novoTabuleiro[4] == player && novoTabuleiro[8] == player ||
-           novoTabuleiro[2] == player && novoTabuleiro[4] == player && novoTabuleiro[6] == player){
+           novoTabuleiro[0] == jogador && novoTabuleiro[4] == jogador && novoTabuleiro[8] == jogador ||
+           novoTabuleiro[2] == jogador && novoTabuleiro[4] == jogador && novoTabuleiro[6] == jogador){
 
-           //textoVencedor =  player + " venceu!";
+           //textoVencedor =  jogador + " venceu!";
            return true;
+
    }
         return false;
 
 }
 
-function resetTabuleiro(){
-    t.celulas = [0, 1, 2, 3, 4, 5, 6, 7, 8];
-    textoVencedor = "";
-    fc = 0;
+// celulasVazias(tabuleiro) retorna um array com todas as celulas vazias de um tabuleiro
+function celulasVazias(tabuleiro){
+  return  tabuleiro.filter(s => s != "O" && s != "X");
 }
+
+////////////////////////////////////////////////////////////////////////////////
