@@ -5,6 +5,8 @@ A simple AI for playing Tic-Tac-Toe, using the Minimax algorithm.
 You can play with the application here:
 https://xandjiji.github.io/jogo-da-velha-IA/
 
+![game](https://i.imgur.com/c5HYKnx.png)
+
 ### Installation
 
   - You need the [p5.js](https://p5js.org/) library to create the game interface (already included)
